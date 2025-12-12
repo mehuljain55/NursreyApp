@@ -1,13 +1,14 @@
 package com.ayush.nursery.controller;
 
+import com.ayush.nursery.dto.CustomerDto;
 import com.ayush.nursery.entity.Customer;
+import com.ayush.nursery.enums.StatusResponse;
 import com.ayush.nursery.models.ApiResponseModal;
 import com.ayush.nursery.service.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/customer")
@@ -21,5 +22,19 @@ public class CustomerController {
     {
         return customerService.createCustomer(customer);
     }
+
+    @GetMapping("/findAll")
+    public ApiResponseModal<List<CustomerDto>> findAllCustomerData()
+    {
+        List<CustomerDto> customerDtoList=customerService.findAllCustomers();
+
+        if(customerDtoList.isEmpty())
+        {
+            return new ApiResponseModal<>(StatusResponse.FAILED,null,"No customer found");
+        }else {
+            return new ApiResponseModal<>(StatusResponse.SUCCESS,customerDtoList,"Customer details found");
+        }
+    }
+
 
 }

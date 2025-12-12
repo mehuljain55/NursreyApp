@@ -1,5 +1,6 @@
 package com.ayush.nursery.serviceImpl;
 
+import com.ayush.nursery.dto.CustomerDto;
 import com.ayush.nursery.entity.Customer;
 import com.ayush.nursery.enums.StatusResponse;
 import com.ayush.nursery.models.ApiResponseModal;
@@ -72,11 +73,6 @@ public class CustomerServiceImpl implements CustomerService {
         if (customer.getIfsc() == null || customer.getIfsc().trim().isEmpty()) {
             isError = true;
             errorMessageList.add("IFSC code is empty");
-        } else {
-            if (!customer.getIfsc().matches("^[A-Z]{4}0[A-Z0-9]{6}$")) {
-                isError = true;
-                errorMessageList.add("Invalid IFSC code format");
-            }
         }
 
 
@@ -86,6 +82,29 @@ public class CustomerServiceImpl implements CustomerService {
         }
 
         return new ApiResponseModal<>(StatusResponse.FAILED, errorMessageList, "Errors in customer data");
+    }
+
+    public List<CustomerDto> findAllCustomers() {
+        return customerRepository.findAll()
+                .stream()
+                .map(this::convertToDto)
+                .toList();
+    }
+
+
+    private CustomerDto convertToDto(Customer customer)
+    {
+        return CustomerDto.builder()
+                .customerId(customer.getCustomerId())
+                .customerName(customer.getCustomerName())
+                .emailId(customer.getEmailId())
+                .contactNo(customer.getContactNo())
+                .address(customer.getAddress())
+                .balance(customer.getBalance())
+                .bankAccountNo(customer.getBankAccountNo())
+                .bankName(customer.getBankName())
+                .ifsc(customer.getIfsc())
+                .build();
     }
 
 
