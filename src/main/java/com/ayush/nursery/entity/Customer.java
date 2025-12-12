@@ -10,10 +10,17 @@ public class Customer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int     customerId;
+    private int customerId;
     private String customerName;
     private String emailId;
     private String contactNo;
     private String address;
     private double balance;
+
+    private String bankAccountNo;
+    private String bankName;
+    private String ifsc;
+
+
+
 }
