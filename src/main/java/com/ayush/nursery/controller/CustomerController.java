@@ -1,6 +1,7 @@
 package com.ayush.nursery.controller;
 
 import com.ayush.nursery.dto.CustomerDto;
+import com.ayush.nursery.dto.CustomerLedgerDto;
 import com.ayush.nursery.entity.Customer;
 import com.ayush.nursery.enums.StatusResponse;
 import com.ayush.nursery.models.ApiResponseModal;
@@ -34,6 +35,20 @@ public class CustomerController {
         }else {
             return new ApiResponseModal<>(StatusResponse.SUCCESS,customerDtoList,"Customer details found");
         }
+    }
+
+    @GetMapping("/ledger/customerId")
+    public ApiResponseModal findCustomerLedger(@RequestParam("customerId") int customerId)
+    {
+        CustomerLedgerDto customerLedgerDto=customerService.findCustomerLedger(customerId);
+
+        if(customerLedgerDto==null)
+        {
+            return new ApiResponseModal<>(StatusResponse.FAILED,null,"Invalid customer id");
+        }else {
+            return new ApiResponseModal<>(StatusResponse.SUCCESS,customerLedgerDto,"Customer ledger found");
+        }
+
     }
 
 

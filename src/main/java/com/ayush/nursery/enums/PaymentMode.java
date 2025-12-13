@@ -4,5 +4,6 @@ public enum PaymentMode {
     CASH,
     UPI,
     BANK_TRANSFER,
-    CHEQUE
+    CHEQUE,
+    NA,
 }

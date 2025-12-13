@@ -1,6 +1,7 @@
 package com.ayush.nursery.entity;
 
 import com.ayush.nursery.enums.PaymentMode;
+import com.ayush.nursery.enums.TransactionType;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -17,11 +18,18 @@ public class Transactions {
     private String description;
     private double amount;
 
+    @Temporal(TemporalType.DATE)
     private Date date;
+
+    @Temporal(TemporalType.TIME)
+    private Date time;
 
     @Enumerated(EnumType.STRING)
     private PaymentMode paymentMode;
 
+
+
     private int invoiceId;
+    private int customerId;
 
 }

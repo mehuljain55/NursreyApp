@@ -15,6 +15,7 @@ public class CreditHistory {
     private int creditId;
     private int invoiceId;
     private int customerId;
+    private String description;
 
     @Temporal(TemporalType.DATE)
     private Date date;

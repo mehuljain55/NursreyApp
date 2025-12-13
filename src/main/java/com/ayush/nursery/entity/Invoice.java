@@ -32,6 +32,8 @@ public class Invoice {
     private double discount;
     private double finalAmount;
 
+    private double dueAmount;
+
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL)
     @JsonManagedReference("invoice-orders")
     private List<Orders> ordersList;

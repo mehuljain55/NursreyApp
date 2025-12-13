@@ -1,22 +1,41 @@
 package com.ayush.nursery.serviceImpl;
 
 import com.ayush.nursery.dto.CustomerDto;
+import com.ayush.nursery.dto.CustomerLedgerDto;
+import com.ayush.nursery.dto.Ledger;
+import com.ayush.nursery.entity.CreditHistory;
 import com.ayush.nursery.entity.Customer;
+import com.ayush.nursery.entity.Invoice;
+import com.ayush.nursery.entity.Transactions;
+import com.ayush.nursery.enums.PaymentMode;
 import com.ayush.nursery.enums.StatusResponse;
+import com.ayush.nursery.enums.TransactionType;
 import com.ayush.nursery.models.ApiResponseModal;
+import com.ayush.nursery.repository.CreditHistoryRepository;
 import com.ayush.nursery.repository.CustomerRepository;
+import com.ayush.nursery.repository.InvoiceRepository;
+import com.ayush.nursery.repository.TransactionRepository;
 import com.ayush.nursery.service.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 @Service
 public class CustomerServiceImpl implements CustomerService {
 
     @Autowired
     private CustomerRepository customerRepository;
+
+    @Autowired
+    private TransactionRepository transactionRepository;
+
+    @Autowired
+    private CreditHistoryRepository creditHistoryRepository;
+
+    @Autowired
+    private InvoiceRepository invoiceRepository;
 
     @Override
     public ApiResponseModal createCustomer(Customer customer) {
@@ -90,6 +109,166 @@ public class CustomerServiceImpl implements CustomerService {
                 .map(this::convertToDto)
                 .toList();
     }
+
+    private void calculateBalances(int customerId) {
+
+        double purchaseBalance = 0;
+        double creditBalance = 0;
+        double amountPaid = 0;
+
+        List<Invoice> invoiceList = invoiceRepository.findInvoices(customerId);
+        List<Transactions> transactionsList = transactionRepository.findTransactions(customerId);
+        List<CreditHistory> creditHistoryList = creditHistoryRepository.findByCustomerId(customerId);
+
+        for (Invoice invoice : invoiceList) {
+            purchaseBalance += invoice.getFinalAmount();
+        }
+
+        for (Transactions tx : transactionsList) {
+            amountPaid += tx.getAmount();
+        }
+
+        for (CreditHistory credit : creditHistoryList) {
+            creditBalance += credit.getAmount();
+        }
+
+        double netBalance = purchaseBalance - amountPaid;
+
+        if (netBalance <= 0) {
+            creditBalance = 0;
+        }
+
+
+    }
+
+
+
+    public CustomerLedgerDto findCustomerLedger(int customerId) {
+
+        if(!customerRepository.existsCustomerById(customerId))
+        {
+            return null;
+        }
+
+        double purchaseBalance=0;
+        double creditBalance=0;
+        double amountPaid=0;
+        double netBalance=0;
+
+        List<Ledger> result = new ArrayList<>();
+        int sno = 1;
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
+
+        List<Invoice> invoiceList = invoiceRepository.findInvoices(customerId);
+        List<Transactions> transactionsList = transactionRepository.findTransactions(customerId);
+        List<CreditHistory> creditHistoryList = creditHistoryRepository.findByCustomerId(customerId);
+
+        for (Invoice invoice : invoiceList) {
+
+            // ---------- Invoice Entry ----------
+            Ledger invoiceLedger = new Ledger();
+            invoiceLedger.setSno(sno++);
+            invoiceLedger.setInvoiceId(invoice.getInvoiceId());
+            invoiceLedger.setDescription("Invoice Generated");
+            invoiceLedger.setAmount(invoice.getFinalAmount());
+            invoiceLedger.setTransactionType(TransactionType.PURCHASE);
+            invoiceLedger.setPaymentMode(PaymentMode.NA);
+            invoiceLedger.setDate(dateFormat.format(invoice.getDate()));
+            purchaseBalance=+invoice.getFinalAmount();
+
+            result.add(invoiceLedger);
+
+            List<Ledger> invoiceLedgers = new ArrayList<>();
+
+            // ---------- Credit Entries ----------
+            for (CreditHistory credit : creditHistoryList) {
+                creditBalance+=credit.getAmount();
+                if (credit.getInvoiceId() == invoice.getInvoiceId()) {
+
+                    Date creditDateTime = mergeDateTime(
+                            credit.getDate(),
+                            credit.getTime()
+                    );
+
+                    Ledger l = new Ledger();
+                    l.setInvoiceId(invoice.getInvoiceId());
+                    l.setDescription(credit.getDescription());
+                    l.setAmount(credit.getAmount());
+                    l.setTransactionType(TransactionType.CREDIT);
+                    l.setPaymentMode(PaymentMode.NA);
+                    l.setSno((int) creditDateTime.getTime());
+                    l.setDate(dateFormat.format(creditDateTime));
+
+                    invoiceLedgers.add(l);
+                }
+            }
+
+            // ---------- Transaction Entries ----------
+            for (Transactions tx : transactionsList) {
+                amountPaid+=tx.getAmount();
+                if (tx.getInvoiceId() == invoice.getInvoiceId()) {
+
+                    Date txDateTime = mergeDateTime(
+                            tx.getDate(),
+                            tx.getTime()
+                    );
+
+                    Ledger l = new Ledger();
+                    l.setInvoiceId(invoice.getInvoiceId());
+                    l.setDescription(tx.getDescription());
+                    l.setAmount(tx.getAmount());
+                    l.setTransactionType(TransactionType.DEBIT);
+                    l.setPaymentMode(tx.getPaymentMode());
+                    l.setSno((int) txDateTime.getTime());
+                    l.setDate(dateFormat.format(txDateTime));
+
+                    invoiceLedgers.add(l);
+                }
+            }
+
+            // ---------- Sort by date ----------
+            invoiceLedgers.sort(Comparator.comparingInt(Ledger::getSno));
+
+            // ---------- Reassign serial numbers ----------
+            for (Ledger l : invoiceLedgers) {
+                l.setSno(sno++);
+                result.add(l);
+            }
+        }
+
+        netBalance=purchaseBalance-amountPaid;
+
+        if(netBalance<=0)
+        {
+            creditBalance=0;
+        }
+
+        CustomerLedgerDto customerLedgerDto=new CustomerLedgerDto();
+        customerLedgerDto.setPurchaseBalance(purchaseBalance);
+        customerLedgerDto.setCreditBalance(creditBalance);
+        customerLedgerDto.setAmountPaid(amountPaid);
+        customerLedgerDto.setNetBalance(netBalance);
+        customerLedgerDto.setLedgerList(result);
+        return customerLedgerDto;
+    }
+
+
+    private Date mergeDateTime(Date date, Date time) {
+
+        if (time == null) return date;
+
+        Calendar d = Calendar.getInstance();
+        d.setTime(date);
+
+        Calendar t = Calendar.getInstance();
+        t.setTime(time);
+        d.set(Calendar.HOUR_OF_DAY, t.get(Calendar.HOUR_OF_DAY));
+        d.set(Calendar.MINUTE, t.get(Calendar.MINUTE));
+        d.set(Calendar.SECOND, t.get(Calendar.SECOND));
+        return d.getTime();
+    }
+
 
 
     private CustomerDto convertToDto(Customer customer)
