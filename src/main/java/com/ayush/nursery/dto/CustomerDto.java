@@ -1,8 +1,10 @@
 package com.ayush.nursery.dto;
 
 import lombok.Builder;
+import lombok.Data;
 
 @Builder
+@Data
 public class CustomerDto {
 
     private int customerId;

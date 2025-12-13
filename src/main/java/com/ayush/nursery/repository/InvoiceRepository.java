@@ -12,6 +12,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice,Integer> {
     @Query("SELECT i FROM Invoice i WHERE i.customer.customerId = :customerId")
     List<Invoice> findInvoices(@Param("customerId") int customerId);
 
-
+    @Query("SELECT MAX(i.invoiceId) FROM Invoice i")
+    Integer findMaxInvoiceId();
 
 }

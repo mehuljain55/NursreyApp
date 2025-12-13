@@ -29,8 +29,7 @@ public class CustomerController {
     {
         List<CustomerDto> customerDtoList=customerService.findAllCustomers();
 
-        if(customerDtoList.isEmpty())
-        {
+        if(customerDtoList.isEmpty()) {
             return new ApiResponseModal<>(StatusResponse.FAILED,null,"No customer found");
         }else {
             return new ApiResponseModal<>(StatusResponse.SUCCESS,customerDtoList,"Customer details found");
@@ -42,13 +41,11 @@ public class CustomerController {
     {
         CustomerLedgerDto customerLedgerDto=customerService.findCustomerLedger(customerId);
 
-        if(customerLedgerDto==null)
-        {
+        if(customerLedgerDto==null) {
             return new ApiResponseModal<>(StatusResponse.FAILED,null,"Invalid customer id");
         }else {
             return new ApiResponseModal<>(StatusResponse.SUCCESS,customerLedgerDto,"Customer ledger found");
         }
-
     }
 
 

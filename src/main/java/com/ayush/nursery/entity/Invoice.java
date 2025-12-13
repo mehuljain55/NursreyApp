@@ -31,7 +31,6 @@ public class Invoice {
     private double amount;
     private double discount;
     private double finalAmount;
-
     private double dueAmount;
 
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL)
