@@ -48,5 +48,12 @@ public class CustomerController {
         }
     }
 
+    @GetMapping("/getDueBalance")
+    public ApiResponseModal getCustomerDueBalance(@RequestParam("customerId") int customerId)
+    {
+        double dueBalance=customerService.calculateBalances(customerId);
+        return new ApiResponseModal<>(StatusResponse.SUCCESS,dueBalance,"Customer balance found");
+    }
+
 
 }

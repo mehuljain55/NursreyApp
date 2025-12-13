@@ -110,35 +110,46 @@ public class CustomerServiceImpl implements CustomerService {
                 .toList();
     }
 
-    private void calculateBalances(int customerId) {
 
-        double purchaseBalance = 0;
-        double creditBalance = 0;
-        double amountPaid = 0;
+    public double calculateBalances(int customerId) {
 
-        List<Invoice> invoiceList = invoiceRepository.findInvoices(customerId);
-        List<Transactions> transactionsList = transactionRepository.findTransactions(customerId);
-        List<CreditHistory> creditHistoryList = creditHistoryRepository.findByCustomerId(customerId);
+        try {
 
-        for (Invoice invoice : invoiceList) {
-            purchaseBalance += invoice.getFinalAmount();
+            Optional<Customer> customerOptional = customerRepository.findById(customerId);
+
+            if (customerOptional.isEmpty()) {
+                return 0;
+            }
+
+            Customer customer = customerOptional.get();
+
+            double purchaseBalance = 0;
+            double creditBalance = 0;
+            double amountPaid = 0;
+
+            List<Invoice> invoiceList = invoiceRepository.findInvoices(customerId);
+            List<Transactions> transactionsList = transactionRepository.findTransactions(customerId);
+            List<CreditHistory> creditHistoryList = creditHistoryRepository.findByCustomerId(customerId);
+
+            for (Invoice invoice : invoiceList) {
+                purchaseBalance += invoice.getFinalAmount();
+            }
+
+            for (Transactions tx : transactionsList) {
+                amountPaid += tx.getAmount();
+            }
+
+            for (CreditHistory credit : creditHistoryList) {
+                creditBalance += credit.getAmount();
+            }
+
+            double netBalance = purchaseBalance - amountPaid;
+            return netBalance;
+
+        }catch (Exception e) {
+            e.printStackTrace();
+            return 0;
         }
-
-        for (Transactions tx : transactionsList) {
-            amountPaid += tx.getAmount();
-        }
-
-        for (CreditHistory credit : creditHistoryList) {
-            creditBalance += credit.getAmount();
-        }
-
-        double netBalance = purchaseBalance - amountPaid;
-
-        if (netBalance <= 0) {
-            creditBalance = 0;
-        }
-
-
     }
 
     public CustomerLedgerDto findCustomerLedger(int customerId) {

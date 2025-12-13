@@ -15,4 +15,6 @@ public interface CustomerService {
 
     CustomerLedgerDto findCustomerLedger(int customerId);
 
+    double calculateBalances(int customerId);
+
 }
