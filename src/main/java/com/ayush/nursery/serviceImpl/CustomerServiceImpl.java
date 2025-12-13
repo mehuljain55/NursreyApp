@@ -141,19 +141,16 @@ public class CustomerServiceImpl implements CustomerService {
 
     }
 
-
-
     public CustomerLedgerDto findCustomerLedger(int customerId) {
 
-        if(!customerRepository.existsCustomerById(customerId))
-        {
+        if (!customerRepository.existsCustomerById(customerId)) {
             return null;
         }
 
-        double purchaseBalance=0;
-        double creditBalance=0;
-        double amountPaid=0;
-        double netBalance=0;
+        double purchaseBalance = 0;
+        double creditBalance = 0;
+        double amountPaid = 0;
+        double netBalance;
 
         List<Ledger> result = new ArrayList<>();
         int sno = 1;
@@ -163,6 +160,26 @@ public class CustomerServiceImpl implements CustomerService {
         List<Invoice> invoiceList = invoiceRepository.findInvoices(customerId);
         List<Transactions> transactionsList = transactionRepository.findTransactions(customerId);
         List<CreditHistory> creditHistoryList = creditHistoryRepository.findByCustomerId(customerId);
+
+    /* ==========================
+       CALCULATE TOTALS (ONCE)
+       ========================== */
+
+        for (Invoice invoice : invoiceList) {
+            purchaseBalance += invoice.getFinalAmount();
+        }
+
+        for (Transactions tx : transactionsList) {
+            amountPaid += tx.getAmount();
+        }
+
+        for (CreditHistory credit : creditHistoryList) {
+            creditBalance += credit.getAmount();
+        }
+
+    /* ==========================
+       BUILD LEDGER INVOICE-WISE
+       ========================== */
 
         for (Invoice invoice : invoiceList) {
 
@@ -175,7 +192,6 @@ public class CustomerServiceImpl implements CustomerService {
             invoiceLedger.setTransactionType(TransactionType.PURCHASE);
             invoiceLedger.setPaymentMode(PaymentMode.NA);
             invoiceLedger.setDate(dateFormat.format(invoice.getDate()));
-            purchaseBalance=+invoice.getFinalAmount();
 
             result.add(invoiceLedger);
 
@@ -183,7 +199,7 @@ public class CustomerServiceImpl implements CustomerService {
 
             // ---------- Credit Entries ----------
             for (CreditHistory credit : creditHistoryList) {
-                creditBalance+=credit.getAmount();
+
                 if (credit.getInvoiceId() == invoice.getInvoiceId()) {
 
                     Date creditDateTime = mergeDateTime(
@@ -206,7 +222,7 @@ public class CustomerServiceImpl implements CustomerService {
 
             // ---------- Transaction Entries ----------
             for (Transactions tx : transactionsList) {
-                amountPaid+=tx.getAmount();
+
                 if (tx.getInvoiceId() == invoice.getInvoiceId()) {
 
                     Date txDateTime = mergeDateTime(
@@ -227,32 +243,35 @@ public class CustomerServiceImpl implements CustomerService {
                 }
             }
 
-            // ---------- Sort by date ----------
+            // ---------- Sort invoice-wise by date ----------
             invoiceLedgers.sort(Comparator.comparingInt(Ledger::getSno));
 
-            // ---------- Reassign serial numbers ----------
+            // ---------- Assign final serial numbers ----------
             for (Ledger l : invoiceLedgers) {
                 l.setSno(sno++);
                 result.add(l);
             }
         }
 
-        netBalance=purchaseBalance-amountPaid;
+    /* ==========================
+       FINAL BALANCE LOGIC
+       ========================== */
 
-        if(netBalance<=0)
-        {
-            creditBalance=0;
+        netBalance = purchaseBalance - amountPaid;
+
+        if (netBalance <= 0) {
+            creditBalance = 0;
         }
 
-        CustomerLedgerDto customerLedgerDto=new CustomerLedgerDto();
+        CustomerLedgerDto customerLedgerDto = new CustomerLedgerDto();
         customerLedgerDto.setPurchaseBalance(purchaseBalance);
         customerLedgerDto.setCreditBalance(creditBalance);
         customerLedgerDto.setAmountPaid(amountPaid);
         customerLedgerDto.setNetBalance(netBalance);
         customerLedgerDto.setLedgerList(result);
+
         return customerLedgerDto;
     }
-
 
     private Date mergeDateTime(Date date, Date time) {
 
@@ -263,12 +282,13 @@ public class CustomerServiceImpl implements CustomerService {
 
         Calendar t = Calendar.getInstance();
         t.setTime(time);
+
         d.set(Calendar.HOUR_OF_DAY, t.get(Calendar.HOUR_OF_DAY));
         d.set(Calendar.MINUTE, t.get(Calendar.MINUTE));
         d.set(Calendar.SECOND, t.get(Calendar.SECOND));
+
         return d.getTime();
     }
-
 
 
     private CustomerDto convertToDto(Customer customer)
