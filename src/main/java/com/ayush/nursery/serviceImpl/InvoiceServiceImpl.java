@@ -4,6 +4,7 @@ import com.ayush.nursery.entity.CreditHistory;
 import com.ayush.nursery.entity.Customer;
 import com.ayush.nursery.entity.Invoice;
 import com.ayush.nursery.entity.Transactions;
+import com.ayush.nursery.enums.StatusResponse;
 import com.ayush.nursery.models.ApiResponseModal;
 import com.ayush.nursery.models.InvoiceModal;
 import com.ayush.nursery.repository.CreditHistoryRepository;
@@ -50,6 +51,11 @@ public class InvoiceServiceImpl implements InvoiceService {
     {
         Optional<Customer> customerOptional=customerRepository.findById(invoiceModal.getCustomerId());
 
+        if(customerOptional.isEmpty())
+        {
+            return new ApiResponseModal<>(StatusResponse.FAILED,null,"Customer not found");
+        }
+        return new ApiResponseModal<>(StatusResponse.FAILED,null,"Customer not found");
     }
 
 
