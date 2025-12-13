@@ -28,6 +28,4 @@ public class InvoiceController {
         return invoiceService.createInvoice(invoiceModal);
     }
 
-
-
 }
