@@ -10,5 +10,16 @@ public class InvoiceServiceImpl implements InvoiceService {
     private InvoiceRepository invoiceRepository;
 
 
+    @Override
+    public int generateInvoiceNumber() {
+        Integer invoiceId=invoiceRepository.findMaxInvoiceId();
 
+        if(invoiceId==null)
+        {
+            invoiceId=1;
+        }else {
+            invoiceId+=1;
+        }
+        return invoiceId;
+    }
 }
