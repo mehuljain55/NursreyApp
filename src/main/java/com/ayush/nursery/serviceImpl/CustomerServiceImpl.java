@@ -154,7 +154,9 @@ public class CustomerServiceImpl implements CustomerService {
 
     public CustomerLedgerDto findCustomerLedger(int customerId) {
 
-        if (!customerRepository.existsCustomerById(customerId)) {
+        Optional<Customer> customerOptional=customerRepository.findById(customerId);
+
+        if (!customerOptional.isEmpty()) {
             return null;
         }
 
