@@ -34,6 +34,18 @@ public class EmployeeServiceImpl implements EmployeeService {
     private SalaryRepository salaryRepository;
 
 
+    public ApiResponseModal findAllEmployees()
+    {
+        List<Employee> employeeList=employeeRepository.findAll();
+
+        if(employeeList.size()>0)
+        {
+            return new ApiResponseModal<>(StatusResponse.SUCCESS,employeeList,"Employees list found");
+        }else {
+            return new ApiResponseModal<>(StatusResponse.FAILED,null,"No employee found");
+        }
+    }
+
     public ApiResponseModal createEmployee(Employee employee) {
 
         boolean isError = false;
