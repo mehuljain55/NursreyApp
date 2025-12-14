@@ -1,5 +1,6 @@
 package com.ayush.nursery.controller;
 
+import com.ayush.nursery.dto.EmployeeSalaryDto;
 import com.ayush.nursery.entity.Employee;
 import com.ayush.nursery.models.ApiResponseModal;
 import com.ayush.nursery.service.EmployeeService;
@@ -47,6 +48,12 @@ public class EmployeeController {
                                          @RequestParam("startDate") @DateTimeFormat(pattern = "yyyy-MM-dd") Date startDate,
                                          @RequestParam("endDate")  @DateTimeFormat(pattern = "yyyy-MM-dd") Date endDate) {
         return employeeService.updateSalary(employeeId, description, amount, deduction,startDate,endDate);
+    }
+
+    @GetMapping("/findEmployeeSalaryView")
+    public ApiResponseModal<EmployeeSalaryDto> findAllEmployees(@RequestParam("employeeId") int employeeId)
+    {
+        return  employeeService.findEmployeeSalaryList(employeeId);
     }
 
 

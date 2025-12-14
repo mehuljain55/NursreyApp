@@ -1,8 +1,11 @@
 package com.ayush.nursery.serviceImpl;
 
+import com.ayush.nursery.dto.EmployeeSalaryDto;
+import com.ayush.nursery.dto.SalaryDto;
 import com.ayush.nursery.entity.Employee;
 import com.ayush.nursery.entity.Salary;
 import com.ayush.nursery.entity.SalaryRegister;
+import com.ayush.nursery.enums.SalaryType;
 import com.ayush.nursery.enums.StatusResponse;
 import com.ayush.nursery.models.ApiResponseModal;
 import com.ayush.nursery.repository.EmployeeRepository;
@@ -160,6 +163,49 @@ public class EmployeeServiceImpl implements EmployeeService {
         } catch (Exception e) {
             return new ApiResponseModal<>(StatusResponse.FAILED, null, "Failed to update salary: " + e.getMessage());
         }
+    }
+
+    public ApiResponseModal<EmployeeSalaryDto> findEmployeeSalaryList(int employeeId)
+    {
+        List<SalaryRegister> salaryRegisterList=salaryRegisterRepository.findSalaryByEmployeeId(employeeId);
+        List<Salary> salaryList=salaryRepository.findByEmployeeId(employeeId);
+        List<SalaryDto> salaryDtoList=new ArrayList<>();
+
+
+        int sno=1;
+
+        for(Salary salary:salaryList)
+        {
+            SalaryDto salaryDto=new SalaryDto(sno++,salary.getDescription(), SalaryType.SALARY,salary.getAmount(),salary.getAdvanceDeduction());
+            salaryDto.setStartDate(salary.getStartDate());
+            salaryDto.setEndDate(salary.getEndDate());
+            salaryDtoList.add(salaryDto);
+        }
+
+        for(SalaryRegister salary:salaryRegisterList)
+        {
+            SalaryDto salaryDto=new SalaryDto(sno++,salary.getDescription(), SalaryType.ADVANCE,salary.getAmount(),0);
+            salaryDto.setStartDate(salary.getDate());
+            salaryDtoList.add(salaryDto);
+        }
+
+        int totalAmount=0;
+        int totalDeduction=0;
+        int finalAmount=0;
+
+        for(SalaryDto salaryDto:salaryDtoList)
+        {
+            totalAmount=totalAmount+salaryDto.getAmount();
+            totalDeduction=totalDeduction+salaryDto.getDeduction();
+            finalAmount=finalAmount+salaryDto.getFinalAmount();
+        }
+
+        EmployeeSalaryDto employeeSalaryDto=new EmployeeSalaryDto();
+        employeeSalaryDto.setTotalAmount(totalAmount);
+        employeeSalaryDto.setTotalDeduction(totalDeduction);
+        employeeSalaryDto.setFinalAmount(finalAmount);
+        employeeSalaryDto.setSalaryList(salaryDtoList);
+        return new ApiResponseModal(StatusResponse.SUCCESS,employeeSalaryDto,"Employee data found");
     }
 
 }
