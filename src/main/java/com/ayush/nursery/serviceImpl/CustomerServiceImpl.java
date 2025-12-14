@@ -152,9 +152,10 @@ public class CustomerServiceImpl implements CustomerService {
         }
     }
 
+
     public CustomerLedgerDto findCustomerLedger(int customerId) {
 
-        Optional<Customer> customerOptional=customerRepository.findById(customerId);
+        Optional<Customer> customerOptional = customerRepository.findById(customerId);
 
         if (customerOptional.isEmpty()) {
             return null;
@@ -166,7 +167,6 @@ public class CustomerServiceImpl implements CustomerService {
         double netBalance;
 
         List<Ledger> result = new ArrayList<>();
-        int sno = 1;
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
 
@@ -191,79 +191,64 @@ public class CustomerServiceImpl implements CustomerService {
         }
 
     /* ==========================
-       BUILD LEDGER INVOICE-WISE
+       BUILD ALL LEDGER ENTRIES
        ========================== */
 
+        // Add all invoice entries
         for (Invoice invoice : invoiceList) {
-
-            // ---------- Invoice Entry ----------
             Ledger invoiceLedger = new Ledger();
-            invoiceLedger.setSno(sno++);
             invoiceLedger.setInvoiceId(invoice.getInvoiceId());
             invoiceLedger.setDescription("Invoice Generated");
             invoiceLedger.setAmount(invoice.getFinalAmount());
             invoiceLedger.setTransactionType(TransactionType.PURCHASE);
             invoiceLedger.setPaymentMode(PaymentMode.NA);
+            invoiceLedger.setSno((int) invoice.getDate().getTime());
             invoiceLedger.setDate(dateFormat.format(invoice.getDate()));
 
             result.add(invoiceLedger);
+        }
 
-            List<Ledger> invoiceLedgers = new ArrayList<>();
+        // Add all credit entries
+        for (CreditHistory credit : creditHistoryList) {
+            Date creditDateTime = mergeDateTime(credit.getDate(), credit.getTime());
 
-            // ---------- Credit Entries ----------
-            for (CreditHistory credit : creditHistoryList) {
+            Ledger l = new Ledger();
+            l.setInvoiceId(credit.getInvoiceId());
+            l.setDescription(credit.getDescription());
+            l.setAmount(credit.getAmount());
+            l.setTransactionType(TransactionType.CREDIT);
+            l.setPaymentMode(PaymentMode.NA);
+            l.setSno((int) creditDateTime.getTime());
+            l.setDate(dateFormat.format(creditDateTime));
 
-                if (credit.getInvoiceId() == invoice.getInvoiceId()) {
+            result.add(l);
+        }
 
-                    Date creditDateTime = mergeDateTime(
-                            credit.getDate(),
-                            credit.getTime()
-                    );
+        // Add all transaction entries
+        for (Transactions tx : transactionsList) {
+            Date txDateTime = mergeDateTime(tx.getDate(), tx.getTime());
 
-                    Ledger l = new Ledger();
-                    l.setInvoiceId(invoice.getInvoiceId());
-                    l.setDescription(credit.getDescription());
-                    l.setAmount(credit.getAmount());
-                    l.setTransactionType(TransactionType.CREDIT);
-                    l.setPaymentMode(PaymentMode.NA);
-                    l.setSno((int) creditDateTime.getTime());
-                    l.setDate(dateFormat.format(creditDateTime));
+            Ledger l = new Ledger();
+            l.setDescription(tx.getDescription());
+            l.setAmount(tx.getAmount());
+            l.setTransactionType(TransactionType.DEBIT);
+            l.setPaymentMode(tx.getPaymentMode());
+            l.setSno((int) txDateTime.getTime());
+            l.setDate(dateFormat.format(txDateTime));
 
-                    invoiceLedgers.add(l);
-                }
-            }
+            result.add(l);
+        }
 
-            // ---------- Transaction Entries ----------
-            for (Transactions tx : transactionsList) {
+    /* ==========================
+       SORT ALL ENTRIES BY DATE
+       ========================== */
 
-                if (tx.getInvoiceId() == invoice.getInvoiceId()) {
+        result.sort(Comparator.comparingInt(Ledger::getSno));
 
-                    Date txDateTime = mergeDateTime(
-                            tx.getDate(),
-                            tx.getTime()
-                    );
-
-                    Ledger l = new Ledger();
-                    l.setInvoiceId(invoice.getInvoiceId());
-                    l.setDescription(tx.getDescription());
-                    l.setAmount(tx.getAmount());
-                    l.setTransactionType(TransactionType.DEBIT);
-                    l.setPaymentMode(tx.getPaymentMode());
-                    l.setSno((int) txDateTime.getTime());
-                    l.setDate(dateFormat.format(txDateTime));
-
-                    invoiceLedgers.add(l);
-                }
-            }
-
-            // ---------- Sort invoice-wise by date ----------
-            invoiceLedgers.sort(Comparator.comparingInt(Ledger::getSno));
-
-            // ---------- Assign final serial numbers ----------
-            for (Ledger l : invoiceLedgers) {
-                l.setSno(sno++);
-                result.add(l);
-            }
+        // Assign final serial numbers
+        int sno = 1;
+        for (Ledger l : result) {
+            l.setSno(sno++);
         }
 
     /* ==========================

@@ -27,9 +27,6 @@ public class Transactions {
     @Enumerated(EnumType.STRING)
     private PaymentMode paymentMode;
 
-
-
-    private int invoiceId;
     private int customerId;
 
 }

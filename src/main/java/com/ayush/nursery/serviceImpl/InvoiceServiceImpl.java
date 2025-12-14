@@ -55,62 +55,66 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     public ApiResponseModal createInvoice(InvoiceModal invoiceModal)
     {
-        Optional<Customer> customerOptional=customerRepository.findById(invoiceModal.getCustomerId());
+        try {
+            Optional<Customer> customerOptional = customerRepository.findById(invoiceModal.getCustomerId());
 
-        if(customerOptional.isEmpty())
+            if (customerOptional.isEmpty()) {
+                return new ApiResponseModal<>(StatusResponse.FAILED, null, "Customer not found");
+            }
+
+            if (invoiceModal.getOrderList().isEmpty()) {
+                return new ApiResponseModal<>(StatusResponse.FAILED, null, "No items found");
+            }
+
+            Customer customer = customerOptional.get();
+
+            Invoice invoice = new Invoice();
+            invoice.setInvoiceId(invoiceModal.getInvoiceId());
+            invoice.setDate(new Date());
+            invoice.setTime(new Date());
+            invoice.setPaymentStatus(invoiceModal.getPaymentStatus());
+            invoice.setCustomer(customer);
+
+            List<Orders> orderList = new ArrayList<>();
+
+            double totalAmount = 0;
+            Double discount = invoiceModal.getDiscount();
+
+            if (discount == null) {
+                discount = 0.0;
+            }
+
+            for (OrderModal orderModal : invoiceModal.getOrderList()) {
+                double price = orderModal.getPrice();
+                double quantity = orderModal.getQuantity();
+                double amount = price * quantity;
+                totalAmount += amount;
+                Orders orders = new Orders();
+                orders.setItemName(orderModal.getItemName());
+                orders.setPrice(orderModal.getPrice());
+                orders.setQuantity(orderModal.getQuantity());
+                orders.setTotalAmount(amount);
+                orders.setInvoice(invoice);
+                orderList.add(orders);
+            }
+
+            invoice.setAmount(totalAmount);
+            invoice.setDiscount(invoiceModal.getDiscount());
+
+            Double finalAmount = totalAmount - discount;
+
+            invoice.setFinalAmount(finalAmount);
+            invoice.setOrdersList(orderList);
+            Invoice saveInvoice = invoiceRepository.save(invoice);
+            createTransactionInvoice(invoice, customer.getCustomerId(), invoiceModal.getPaymentList());
+            calculateBalances(customer.getCustomerId());
+            return new ApiResponseModal<>(StatusResponse.SUCCESS, saveInvoice.getInvoiceId(), "Invoice created");
+        }catch (Exception e)
         {
-            return new ApiResponseModal<>(StatusResponse.FAILED,null,"Customer not found");
+            e.printStackTrace();
+            return new ApiResponseModal<>(StatusResponse.FAILED, null, "Unable to create invoice");
+
         }
-
-        if(invoiceModal.getOrderList().isEmpty())
-        {
-            return new ApiResponseModal<>(StatusResponse.FAILED,null,"No items found");
-        }
-
-        Customer customer=customerOptional.get();
-
-        Invoice invoice=new Invoice();
-        invoice.setInvoiceId(invoiceModal.getInvoiceId());
-        invoice.setDate(new Date());
-        invoice.setTime(new Date());
-        invoice.setPaymentStatus(invoiceModal.getPaymentStatus());
-        invoice.setCustomer(customer);
-
-        List<Orders> orderList=new ArrayList<>();
-
-        double totalAmount=0;
-        Double discount=invoiceModal.getDiscount();
-
-        if(discount==null)
-        {
-            discount=0.0;
-        }
-
-        for(OrderModal orderModal:invoiceModal.getOrderList())
-        {
-            double price=orderModal.getPrice();
-            double quantity=orderModal.getQuantity();
-            double amount=price*quantity;
-            totalAmount+=amount;
-            Orders orders=new Orders();
-            orders.setItemName(orderModal.getItemName());
-            orders.setPrice(orderModal.getPrice());
-            orders.setQuantity(orderModal.getQuantity());
-            orders.setTotalAmount(amount);
-            orders.setInvoice(invoice);
-            orderList.add(orders);
-        }
-
-        invoice.setAmount(totalAmount);
-        invoice.setDiscount(invoiceModal.getDiscount());
-
-        Double finalAmount=totalAmount-discount;
-
-        invoice.setFinalAmount(finalAmount);
-        invoice.setOrdersList(orderList);
-        Invoice saveInvoice=invoiceRepository.save(invoice);
-        createTransactionInvoice(invoice,customer.getCustomerId(),invoiceModal.getPaymentList());
-        return new ApiResponseModal<>(StatusResponse.SUCCESS,saveInvoice.getInvoiceId(),"Invoice created");
     }
 
 
@@ -163,9 +167,24 @@ public class InvoiceServiceImpl implements InvoiceService {
     {
         List<Transactions> transactionsList=new ArrayList<>();
 
+        Optional<Customer> customerOptional=customerRepository.findById(customerId);
+        Customer customer=customerOptional.get();
+
         double invoiceAmount=invoice.getFinalAmount();
         double creditAmount=0;
         double paidAmount=0;
+
+        if(invoice.getPaymentStatus().equals(PaymentStatus.CREDIT))
+        {
+            CreditHistory creditHistory=new CreditHistory();
+            creditHistory.setInvoiceId(invoice.getInvoiceId());
+            creditHistory.setCustomerId(customerId);
+            creditHistory.setDescription("Credit of invoice:"+invoice.getInvoiceId());
+            creditHistory.setDate(new Date());
+            creditHistory.setTime(new Date());
+            creditHistory.setAmount(invoice.getAmount());
+            creditHistoryRepository.save(creditHistory);
+        }else {
 
         for(PaymentModal payment:paymentList)
         {
@@ -185,7 +204,6 @@ public class InvoiceServiceImpl implements InvoiceService {
             if(payment.getPaymentMode().equalsIgnoreCase("CASH"))
             {
                 Transactions transactions=new Transactions();
-                transactions.setInvoiceId(invoice.getInvoiceId());
                 transactions.setCustomerId(customerId);
                 transactions.setAmount(payment.getAmount());
                 transactions.setDescription("Payment received against invoice no-"+invoice.getInvoiceId());
@@ -199,7 +217,6 @@ public class InvoiceServiceImpl implements InvoiceService {
             if(payment.getPaymentMode().equalsIgnoreCase("UPI"))
             {
                 Transactions transactions=new Transactions();
-                transactions.setInvoiceId(invoice.getInvoiceId());
                 transactions.setCustomerId(customerId);
                 transactions.setAmount(payment.getAmount());
                 transactions.setDescription("Payment received against invoice no-"+invoice.getInvoiceId());
@@ -214,7 +231,6 @@ public class InvoiceServiceImpl implements InvoiceService {
             if(payment.getPaymentMode().equalsIgnoreCase("BANK_TRANSFER") || payment.getPaymentMode().equalsIgnoreCase("BANK TRANSFER") )
             {
                 Transactions transactions=new Transactions();
-                transactions.setInvoiceId(invoice.getInvoiceId());
                 transactions.setCustomerId(customerId);
                 transactions.setAmount(payment.getAmount());
                 transactions.setDescription("Payment received against invoice no-"+invoice.getInvoiceId());
@@ -228,7 +244,6 @@ public class InvoiceServiceImpl implements InvoiceService {
             if(payment.getPaymentMode().equalsIgnoreCase("CHEQUE"))
             {
                 Transactions transactions=new Transactions();
-                transactions.setInvoiceId(invoice.getInvoiceId());
                 transactions.setCustomerId(customerId);
                 transactions.setAmount(payment.getAmount());
                 transactions.setDescription("Payment received against invoice no-"+invoice.getInvoiceId());
@@ -239,33 +254,27 @@ public class InvoiceServiceImpl implements InvoiceService {
                 transactionRepository.save(transactions);
             }
 
-        }
 
-        double netAmount=invoiceAmount-paidAmount;
+            double netAmount=invoiceAmount-paidAmount;
 
-        if(netAmount<=0)
-        {
-            invoice.setDueAmount(0);
-            invoice.setPaymentStatus(PaymentStatus.FULL_PAYMENT);
-            invoiceRepository.save(invoice);
-            return;
-        }
+            if(netAmount<=0) {
+                invoice.setDueAmount(0);
+                invoice.setPaymentStatus(PaymentStatus.FULL_PAYMENT);
+                invoiceRepository.save(invoice);
+            } else if(paidAmount==0 && (creditAmount==netAmount)) {
+                invoice.setDueAmount(creditAmount);
+                invoice.setPaymentStatus(PaymentStatus.CREDIT);
+                invoiceRepository.save(invoice);
 
-      else if(paidAmount==0 && (creditAmount==netAmount))
-        {
-            invoice.setDueAmount(creditAmount);
-            invoice.setPaymentStatus(PaymentStatus.CREDIT);
-            invoiceRepository.save(invoice);
-            return;
-        }
+            } else  if(netAmount!=0 && paidAmount!=0 && creditAmount!=0) {
+                invoice.setDueAmount(creditAmount);
+                invoice.setPaymentStatus(PaymentStatus.PARTIAL_PAYMENT);
+                invoiceRepository.save(invoice);
+            }
 
-      else  if(netAmount!=0 && paidAmount!=0 && creditAmount!=0)
-        {
-            invoice.setDueAmount(creditAmount);
-            invoice.setPaymentStatus(PaymentStatus.PARTIAL_PAYMENT);
-            invoiceRepository.save(invoice);
-            return;
         }
+    }
+
     }
 
     private void calculateBalances(int customerId) {
