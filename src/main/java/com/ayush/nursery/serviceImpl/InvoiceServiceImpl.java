@@ -108,9 +108,9 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         invoice.setFinalAmount(finalAmount);
         invoice.setOrdersList(orderList);
-        invoiceRepository.save(invoice);
+        Invoice saveInvoice=invoiceRepository.save(invoice);
         createTransactionInvoice(invoice,customer.getCustomerId(),invoiceModal.getPaymentList());
-        return new ApiResponseModal<>(StatusResponse.SUCCESS,null,"Invoice created");
+        return new ApiResponseModal<>(StatusResponse.SUCCESS,saveInvoice.getInvoiceId(),"Invoice created");
     }
 
 
