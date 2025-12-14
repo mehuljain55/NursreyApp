@@ -24,7 +24,6 @@ public class InvoiceController {
     }
 
 
-
     @PostMapping("/create")
     public ApiResponseModal createInvoice(@RequestBody InvoiceModal invoiceModal)
     {
