@@ -17,7 +17,7 @@ public class EmployeeController {
     private EmployeeService employeeService;
 
 
-    @PostMapping("/findALl")
+    @GetMapping("/findAll")
     public ApiResponseModal findAllEmployees()
     {
         return  employeeService.findAllEmployees();
