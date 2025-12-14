@@ -31,6 +31,12 @@ public class InvoiceController {
         return invoiceService.createInvoice(invoiceModal);
     }
 
+    @GetMapping("/view")
+    public ApiResponseModal<InvoiceDto> viewInvoice(@RequestParam("invoiceId") int invoiceId)
+    {
+        return invoiceService.viewInvoice(invoiceId);
+    }
+
     @GetMapping("/viewAll")
     public ApiResponseModal<List<InvoiceDto>> viewInvoice()
     {
