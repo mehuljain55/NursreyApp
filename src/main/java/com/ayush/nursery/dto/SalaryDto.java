@@ -4,7 +4,6 @@ import com.ayush.nursery.enums.SalaryType;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import lombok.Data;
-
 import java.util.Date;
 
 @Data

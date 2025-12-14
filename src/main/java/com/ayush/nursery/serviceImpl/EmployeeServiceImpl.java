@@ -156,8 +156,10 @@ public class EmployeeServiceImpl implements EmployeeService {
             salary.setEndDate(endDate);
             Salary savedSalary = salaryRepository.save(salary);
 
-            if (savedSalary != null && savedSalary.getTxnId() > 0 && deduction > 0) {
-                employee.setAdvanceBalance(currentAdvance - deduction);
+            if (deduction > 0) {
+                int finalBalance=currentAdvance-deduction;
+                System.out.println(finalBalance);
+                employee.setAdvanceBalance(finalBalance);
                 employeeRepository.save(employee);
             }
             return new ApiResponseModal<>(StatusResponse.SUCCESS, null, "Salary updated successfully");

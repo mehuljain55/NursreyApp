@@ -1,5 +1,7 @@
 package com.ayush.nursery.serviceImpl;
 
+import com.ayush.nursery.dto.InvoiceDto;
+import com.ayush.nursery.dto.OrderDto;
 import com.ayush.nursery.entity.*;
 import com.ayush.nursery.enums.PaymentMode;
 import com.ayush.nursery.enums.PaymentStatus;
@@ -8,12 +10,8 @@ import com.ayush.nursery.models.ApiResponseModal;
 import com.ayush.nursery.models.InvoiceModal;
 import com.ayush.nursery.models.OrderModal;
 import com.ayush.nursery.models.PaymentModal;
-import com.ayush.nursery.repository.CreditHistoryRepository;
-import com.ayush.nursery.repository.CustomerRepository;
-import com.ayush.nursery.repository.InvoiceRepository;
-import com.ayush.nursery.repository.TransactionRepository;
+import com.ayush.nursery.repository.*;
 import com.ayush.nursery.service.InvoiceService;
-import org.hibernate.query.Order;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -37,6 +35,8 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Autowired
     private CustomerRepository customerRepository;
 
+    @Autowired
+    private OrderRepository orderRepository;
 
 
     @Override
@@ -111,6 +111,51 @@ public class InvoiceServiceImpl implements InvoiceService {
         createTransactionInvoice(invoice,customer.getCustomerId(),invoiceModal.getPaymentList());
         return new ApiResponseModal<>(StatusResponse.SUCCESS,null,"Invoice created");
     }
+
+
+    public ApiResponseModal<List<InvoiceDto>> viewAllInvoice() {
+
+        List<Invoice> invoiceList=invoiceRepository.findAll();
+        List<InvoiceDto> invoiceDtoList=new ArrayList<>();
+
+
+        for(Invoice invoice:invoiceList)
+        {
+
+            if(invoice==null)
+            {
+                continue;
+            }
+
+            InvoiceDto invoiceDto = buildInvoiceDto(invoice);
+            invoiceDtoList.add(invoiceDto);
+        }
+
+        if(invoiceDtoList.size()>0) {
+            return new ApiResponseModal<>(StatusResponse.SUCCESS, invoiceDtoList, "Invoice fetched successfully");
+        }else {
+            return new ApiResponseModal<>(StatusResponse.FAILED, null, "No invoice found");
+
+        }
+    }
+
+    public ApiResponseModal<InvoiceDto> viewInvoice(int invoiceId) {
+
+        Optional<Invoice> invoiceOptional = invoiceRepository.findById(invoiceId);
+
+        if (invoiceOptional.isEmpty()) {
+            return new ApiResponseModal<>(StatusResponse.FAILED, null, "Invoice not found");
+        }
+
+        InvoiceDto invoiceDto = buildInvoiceDto(invoiceOptional.get());
+
+        return new ApiResponseModal<>(
+                StatusResponse.SUCCESS,
+                invoiceDto,
+                "Invoice fetched successfully"
+        );
+    }
+
 
 
     private void createTransactionInvoice(Invoice invoice,int customerId, List<PaymentModal> paymentList)
@@ -262,4 +307,45 @@ public class InvoiceServiceImpl implements InvoiceService {
             e.printStackTrace();
         }
     }
+
+    private InvoiceDto buildInvoiceDto(Invoice invoice) {
+
+        InvoiceDto invoiceDto = new InvoiceDto();
+
+        // Invoice details
+        invoiceDto.setInvoiceId(invoice.getInvoiceId());
+        invoiceDto.setDescription(invoice.getDescription());
+        invoiceDto.setDate(invoice.getDate());
+        invoiceDto.setTime(invoice.getTime());
+        invoiceDto.setPaymentStatus(invoice.getPaymentStatus());
+        invoiceDto.setAmount(invoice.getAmount());
+        invoiceDto.setDiscount(invoice.getDiscount());
+        invoiceDto.setFinalAmount(invoice.getFinalAmount());
+        invoiceDto.setDueAmount(invoice.getDueAmount());
+
+        // Customer details
+        Customer customer = invoice.getCustomer();
+        if (customer != null) {
+            invoiceDto.setCustomerName(customer.getCustomerName());
+            invoiceDto.setCustomerNumber(customer.getContactNo());
+        }
+
+        // Order details
+        List<OrderDto> orderDtoList = new ArrayList<>();
+        if (invoice.getOrdersList() != null) {
+            for (Orders order : invoice.getOrdersList()) {
+                OrderDto orderDto = new OrderDto();
+                orderDto.setItemName(order.getItemName());
+                orderDto.setPrice(order.getPrice());
+                orderDto.setQuantity(order.getQuantity());
+                orderDto.setTotalAmount(order.getTotalAmount());
+                orderDtoList.add(orderDto);
+            }
+        }
+
+        invoiceDto.setOrderList(orderDtoList);
+
+        return invoiceDto;
+    }
+
 }

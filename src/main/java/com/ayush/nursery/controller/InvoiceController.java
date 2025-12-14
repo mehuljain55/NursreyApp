@@ -1,11 +1,14 @@
 package com.ayush.nursery.controller;
 
+import com.ayush.nursery.dto.InvoiceDto;
 import com.ayush.nursery.enums.StatusResponse;
 import com.ayush.nursery.models.ApiResponseModal;
 import com.ayush.nursery.models.InvoiceModal;
 import com.ayush.nursery.service.InvoiceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/invoice")
@@ -26,6 +29,12 @@ public class InvoiceController {
     public ApiResponseModal createInvoice(@RequestPart("invoiceModal")InvoiceModal invoiceModal)
     {
         return invoiceService.createInvoice(invoiceModal);
+    }
+
+    @GetMapping("/viewAll")
+    public ApiResponseModal<List<InvoiceDto>> viewInvoice()
+    {
+        return invoiceService.viewAllInvoice();
     }
 
 }
