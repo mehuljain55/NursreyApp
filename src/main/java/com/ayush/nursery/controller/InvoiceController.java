@@ -1,13 +1,16 @@
 package com.ayush.nursery.controller;
 
 import com.ayush.nursery.dto.InvoiceDto;
+import com.ayush.nursery.enums.PaymentMode;
 import com.ayush.nursery.enums.StatusResponse;
 import com.ayush.nursery.models.ApiResponseModal;
 import com.ayush.nursery.models.InvoiceModal;
 import com.ayush.nursery.service.InvoiceService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Date;
 import java.util.List;
 
 @RestController
@@ -41,5 +44,16 @@ public class InvoiceController {
     {
         return invoiceService.viewAllInvoice();
     }
+
+
+    @PostMapping("/customerRepayment")
+    public ApiResponseModal customerRepayment(@RequestParam("customerId") int customerId,
+                                              @RequestParam("amount") double amount,
+                                              @RequestParam("paymentMode") PaymentMode paymentMode,
+                                              @RequestParam("date") @DateTimeFormat(pattern = "yyyy-MM-dd") Date date) {
+
+        return invoiceService.addCustomerRepayment(customerId,amount,date,paymentMode);
+    }
+
 
 }

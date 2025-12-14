@@ -11,6 +11,7 @@ import com.ayush.nursery.models.InvoiceModal;
 import com.ayush.nursery.models.OrderModal;
 import com.ayush.nursery.models.PaymentModal;
 import com.ayush.nursery.repository.*;
+import com.ayush.nursery.service.CustomerService;
 import com.ayush.nursery.service.InvoiceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,9 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     @Autowired
     private OrderRepository orderRepository;
+
+    @Autowired
+    private CustomerService customerService;
 
 
     @Override
@@ -143,6 +147,64 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         }
     }
+
+    public ApiResponseModal addCustomerRepayment(int customerId, double amount, Date date, PaymentMode paymentMode) {
+
+        Optional<Customer> customerOptional = customerRepository.findById(customerId);
+
+        if (customerOptional.isEmpty()) {
+            return new ApiResponseModal<>(StatusResponse.FAILED, null, "Customer not found");
+        }
+
+        double creditBalance = customerService.calculateBalances(customerId);
+
+        if (creditBalance <= 0) {
+            return new ApiResponseModal<>(StatusResponse.FAILED, null, "No due balance");
+        }
+
+        double remainingAmount = amount;
+
+        String description="Repayment against invoices: ";
+
+        List<Invoice> invoiceList =
+                invoiceRepository.findDueInvoicesByCustomerId(customerId);
+
+        for (Invoice invoice : invoiceList) {
+
+            if (remainingAmount <= 0) {
+                break;
+            }
+
+            double invoiceDueAmount = invoice.getDueAmount();
+
+            if (remainingAmount >= invoiceDueAmount) {
+                description=description+invoice.getInvoiceId()+" ,";
+                invoice.setDueAmount(0);
+                invoice.setPaymentStatus(PaymentStatus.FULL_PAYMENT);
+                remainingAmount -= invoiceDueAmount;
+                invoiceRepository.save(invoice);
+            } else {
+                description=description+invoice.getInvoiceId()+" ,";
+                invoice.setDueAmount(invoiceDueAmount - remainingAmount);
+                invoice.setPaymentStatus(PaymentStatus.PARTIAL_PAYMENT);
+                remainingAmount = 0;
+                invoiceRepository.save(invoice);
+            }
+
+        }
+
+        Transactions transactions=new Transactions();
+        transactions.setDescription(description);
+        transactions.setDate(date);
+        transactions.setTime(date);
+        transactions.setAmount(amount);
+        transactions.setCustomerId(customerId);
+        transactions.setPaymentMode(paymentMode);
+        transactionRepository.save(transactions);
+        calculateBalances(customerId);
+        return new ApiResponseModal<>(StatusResponse.SUCCESS, null, "Repayment adjusted successfully");
+    }
+
 
     public ApiResponseModal<InvoiceDto> viewInvoice(int invoiceId) {
 
