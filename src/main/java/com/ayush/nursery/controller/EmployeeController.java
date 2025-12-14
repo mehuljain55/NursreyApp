@@ -9,6 +9,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
+import java.util.List;
 
 @RestController
 @RequestMapping("/employee")
@@ -19,7 +20,7 @@ public class EmployeeController {
 
 
     @GetMapping("/findAll")
-    public ApiResponseModal findAllEmployees()
+    public ApiResponseModal<List<Employee>> findAllEmployees()
     {
         return  employeeService.findAllEmployees();
     }

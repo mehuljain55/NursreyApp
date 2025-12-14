@@ -37,7 +37,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     private SalaryRepository salaryRepository;
 
 
-    public ApiResponseModal findAllEmployees()
+    public ApiResponseModal<List<Employee>> findAllEmployees()
     {
         List<Employee> employeeList=employeeRepository.findAll();
 
