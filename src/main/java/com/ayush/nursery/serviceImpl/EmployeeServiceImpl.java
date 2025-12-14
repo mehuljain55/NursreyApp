@@ -151,6 +151,7 @@ public class EmployeeServiceImpl implements EmployeeService {
             salary.setDescription(description);
             salary.setAmount(amount);
             salary.setAdvanceDeduction(deduction);
+            salary.setFinalAmount(amount-deduction);
             salary.setStartDate(startDate);
             salary.setEndDate(endDate);
             Salary savedSalary = salaryRepository.save(salary);
