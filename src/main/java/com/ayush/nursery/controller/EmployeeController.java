@@ -56,6 +56,4 @@ public class EmployeeController {
     {
         return  employeeService.findEmployeeSalaryList(employeeId);
     }
-
-
 }
