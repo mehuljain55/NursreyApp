@@ -156,7 +156,7 @@ public class CustomerServiceImpl implements CustomerService {
 
         Optional<Customer> customerOptional=customerRepository.findById(customerId);
 
-        if (!customerOptional.isEmpty()) {
+        if (customerOptional.isEmpty()) {
             return null;
         }
 

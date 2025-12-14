@@ -26,7 +26,7 @@ public class InvoiceController {
 
 
     @PostMapping("/create")
-    public ApiResponseModal createInvoice(@RequestPart("invoiceModal")InvoiceModal invoiceModal)
+    public ApiResponseModal createInvoice(@RequestBody InvoiceModal invoiceModal)
     {
         return invoiceService.createInvoice(invoiceModal);
     }

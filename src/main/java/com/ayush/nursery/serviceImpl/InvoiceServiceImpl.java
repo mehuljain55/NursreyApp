@@ -74,6 +74,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         invoice.setDate(new Date());
         invoice.setTime(new Date());
         invoice.setPaymentStatus(invoiceModal.getPaymentStatus());
+        invoice.setCustomer(customer);
 
         List<Orders> orderList=new ArrayList<>();
 
