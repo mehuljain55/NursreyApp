@@ -34,9 +34,20 @@ public class EmployeeController {
     public ApiResponseModal addAdvanceSalary(@RequestParam("employeeId") int employeeId,
                                              @RequestParam("description") String description,
                                              @RequestParam("amount") Integer amount,
-                                             @RequestParam("date")
-                                             @DateTimeFormat(pattern = "yyyy-MM-dd") Date date) {
+                                             @RequestParam("date") @DateTimeFormat(pattern = "yyyy-MM-dd") Date date) {
         return employeeService.addAdvanceSalary(employeeId, description, amount, date);
     }
+
+
+    @PostMapping("/update/salary")
+    public ApiResponseModal updateSalary(@RequestParam("employeeId") int employeeId,
+                                         @RequestParam("description") String description,
+                                         @RequestParam("amount") Integer amount,
+                                         @RequestParam("deduction") Integer deduction,
+                                         @RequestParam("startDate") @DateTimeFormat(pattern = "yyyy-MM-dd") Date startDate,
+                                         @RequestParam("endDate")  @DateTimeFormat(pattern = "yyyy-MM-dd") Date endDate) {
+        return employeeService.updateSalary(employeeId, description, amount, deduction,startDate,endDate);
+    }
+
 
 }
