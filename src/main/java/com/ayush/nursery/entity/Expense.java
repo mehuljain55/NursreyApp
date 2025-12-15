@@ -20,4 +20,5 @@ public class Expense {
     @Temporal(TemporalType.DATE)
     private Date date;
 
+
 }
