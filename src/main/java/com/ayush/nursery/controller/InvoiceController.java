@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
@@ -53,11 +55,26 @@ public class InvoiceController {
 
 
     @GetMapping("/sales/dateRange")
-    public ApiResponseModal<Double> findSalesByDateRange(@RequestParam("startDate") @DateTimeFormat(pattern = "yyyy-mm-dd") Date startDate,
-                                                         @RequestParam("endDate") @DateTimeFormat(pattern = "yyyy-mm-dd") Date endDate) {
-        double amount = invoiceService.findSumByDateRange(startDate, endDate);
-        return new ApiResponseModal<>(StatusResponse.SUCCESS, amount, "Sales found");
+    public ApiResponseModal<Double> findSalesByDateRange(
+            @RequestParam("startDate") String startDate,
+            @RequestParam("endDate") String endDate) {
+
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            sdf.setLenient(false);
+
+            Date startUtilDate = sdf.parse(startDate);
+            Date endUtilDate = sdf.parse(endDate);
+
+            double amount = invoiceService.findSumByDateRange(startUtilDate, endUtilDate);
+
+            return new ApiResponseModal<>(StatusResponse.SUCCESS, amount, "Sales found");
+
+        } catch (ParseException e) {
+            return new ApiResponseModal<>(StatusResponse.FAILED, null, "Invalid date format");
+        }
     }
+
 
 
     @PostMapping("/customerRepayment")

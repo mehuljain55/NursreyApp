@@ -3,18 +3,21 @@ package com.ayush.nursery.serviceImpl;
 import com.ayush.nursery.dto.EmployeeSalaryDto;
 import com.ayush.nursery.dto.SalaryDto;
 import com.ayush.nursery.entity.Employee;
+import com.ayush.nursery.entity.Expense;
 import com.ayush.nursery.entity.Salary;
 import com.ayush.nursery.entity.SalaryRegister;
 import com.ayush.nursery.enums.SalaryType;
 import com.ayush.nursery.enums.StatusResponse;
 import com.ayush.nursery.models.ApiResponseModal;
 import com.ayush.nursery.repository.EmployeeRepository;
+import com.ayush.nursery.repository.ExpenseRepository;
 import com.ayush.nursery.repository.SalaryRegisterRepository;
 import com.ayush.nursery.repository.SalaryRepository;
 import com.ayush.nursery.service.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.text.SimpleDateFormat;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -35,6 +38,9 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Autowired
     private SalaryRepository salaryRepository;
+
+    @Autowired
+    private ExpenseRepository expenseRepository;
 
 
     public ApiResponseModal<List<Employee>> findAllEmployees()
@@ -210,5 +216,46 @@ public class EmployeeServiceImpl implements EmployeeService {
         employeeSalaryDto.setSalaryList(salaryDtoList);
         return new ApiResponseModal(StatusResponse.SUCCESS,employeeSalaryDto,"Employee data found");
     }
+
+    public ApiResponseModal createExpense(String description,int amount,Date date) {
+        try {
+
+            Expense expense = new Expense();
+            expense.setDescription(description);
+            expense.setAmount(amount);
+            expense.setDate(date);
+            expenseRepository.save(expense);
+            return new ApiResponseModal<>(StatusResponse.SUCCESS, null, "Expense created");
+        }catch (Exception e)
+        {
+            e.printStackTrace();
+            return new ApiResponseModal<>(StatusResponse.FAILED,null,"Unable to create expense");
+        }
+    }
+
+
+    public ApiResponseModal<List<Expense>> findExpenseByDateRange(Date startDate, Date endDate) {
+        try {
+            List<Expense> expenseList = expenseRepository.findExpensesByDateRange(startDate, endDate);
+
+
+            if(expenseList.isEmpty())
+            {
+                return new ApiResponseModal<>(StatusResponse.FAILED,null,"Expense not found");
+            }
+
+            SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
+
+            for (Expense expense : expenseList) {
+                String formattedDate = sdf.format(expense.getDate());
+                expense.setExpenseDate(formattedDate);
+            }
+            return new ApiResponseModal<>(StatusResponse.SUCCESS, expenseList, "Expense fetched successfully");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ApiResponseModal<>(StatusResponse.FAILED, null, "Unable to fetch expense list");
+        }
+    }
+
 
 }
