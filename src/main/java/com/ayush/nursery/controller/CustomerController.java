@@ -21,6 +21,7 @@ public class CustomerController {
     @PostMapping("/create")
     public ApiResponseModal createCustomerData(@RequestBody Customer customer)
     {
+        System.out.println(customer.getCustomerName());
         return customerService.createCustomer(customer);
     }
 

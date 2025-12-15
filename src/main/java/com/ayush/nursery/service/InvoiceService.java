@@ -18,5 +18,9 @@ public interface InvoiceService {
 
     ApiResponseModal<List<InvoiceDto>> viewAllInvoice();
 
+    ApiResponseModal<List<InvoiceDto>> viewTodayInvoices();
+
     ApiResponseModal addCustomerRepayment(int customerId, double amount, Date date, PaymentMode paymentMode);
+
+    double findSumByDateRange(Date startDate,Date endDate);
 }

@@ -27,4 +27,5 @@ public class Customer {
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
     @JsonManagedReference("invoice-customer")
     private List<Invoice> invoiceList;
+
 }

@@ -1,6 +1,7 @@
 package com.ayush.nursery.entity;
 
 import com.ayush.nursery.enums.PaymentStatus;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -39,6 +40,7 @@ public class Invoice {
 
     @ManyToOne
     @JoinColumn(name = "customer_id")
-    @JsonManagedReference("invoice-customer")
+    @JsonBackReference("invoice-customer")
     private Customer customer;
+
 }

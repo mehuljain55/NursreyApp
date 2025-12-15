@@ -14,8 +14,8 @@ public class InvoiceDto {
     private String customerNumber;
     private String description;
 
-    private Date date;
-    private Date time;
+    private String date;
+    private String time;
     private PaymentStatus paymentStatus;
     private double amount;
     private double discount;

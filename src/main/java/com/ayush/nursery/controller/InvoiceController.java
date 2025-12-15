@@ -45,6 +45,20 @@ public class InvoiceController {
         return invoiceService.viewAllInvoice();
     }
 
+    @GetMapping("/today/view")
+    public ApiResponseModal<List<InvoiceDto>> viewTodayInvoices()
+    {
+        return invoiceService.viewTodayInvoices();
+    }
+
+
+    @GetMapping("/sales/dateRange")
+    public ApiResponseModal<Double> findSalesByDateRange(@RequestParam("startDate") @DateTimeFormat(pattern = "yyyy-mm-dd") Date startDate,
+                                                         @RequestParam("endDate") @DateTimeFormat(pattern = "yyyy-mm-dd") Date endDate) {
+        double amount = invoiceService.findSumByDateRange(startDate, endDate);
+        return new ApiResponseModal<>(StatusResponse.SUCCESS, amount, "Sales found");
+    }
+
 
     @PostMapping("/customerRepayment")
     public ApiResponseModal customerRepayment(@RequestParam("customerId") int customerId,

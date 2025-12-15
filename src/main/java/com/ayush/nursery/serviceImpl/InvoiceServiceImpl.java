@@ -16,6 +16,7 @@ import com.ayush.nursery.service.InvoiceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -148,61 +149,99 @@ public class InvoiceServiceImpl implements InvoiceService {
         }
     }
 
+    public ApiResponseModal<List<InvoiceDto>> viewTodayInvoices() {
+
+        List<Invoice> invoiceList=invoiceRepository.findByInvoiceDate(new Date());
+        List<InvoiceDto> invoiceDtoList=new ArrayList<>();
+
+
+        for(Invoice invoice:invoiceList)
+        {
+
+            if(invoice==null)
+            {
+                continue;
+            }
+
+            InvoiceDto invoiceDto = buildInvoiceDto(invoice);
+            invoiceDtoList.add(invoiceDto);
+        }
+
+        if(invoiceDtoList.size()>0) {
+            return new ApiResponseModal<>(StatusResponse.SUCCESS, invoiceDtoList, "Invoice fetched successfully");
+        }else {
+            return new ApiResponseModal<>(StatusResponse.FAILED, null, "No invoice found");
+
+        }
+    }
+
+    public double findSumByDateRange(Date startDate,Date endDate)
+    {
+        return invoiceRepository.sumFinalAmountByDateRange(startDate,endDate);
+    }
+
     public ApiResponseModal addCustomerRepayment(int customerId, double amount, Date date, PaymentMode paymentMode) {
 
-        Optional<Customer> customerOptional = customerRepository.findById(customerId);
+        try {
+            Optional<Customer> customerOptional = customerRepository.findById(customerId);
 
-        if (customerOptional.isEmpty()) {
-            return new ApiResponseModal<>(StatusResponse.FAILED, null, "Customer not found");
-        }
-
-        double creditBalance = customerService.calculateBalances(customerId);
-
-        if (creditBalance <= 0) {
-            return new ApiResponseModal<>(StatusResponse.FAILED, null, "No due balance");
-        }
-
-        double remainingAmount = amount;
-
-        String description="Repayment against invoices: ";
-
-        List<Invoice> invoiceList =
-                invoiceRepository.findDueInvoicesByCustomerId(customerId);
-
-        for (Invoice invoice : invoiceList) {
-
-            if (remainingAmount <= 0) {
-                break;
+            if (customerOptional.isEmpty()) {
+                return new ApiResponseModal<>(StatusResponse.FAILED, null, "Customer not found");
             }
 
-            double invoiceDueAmount = invoice.getDueAmount();
+            double creditBalance = customerService.calculateBalances(customerId);
 
-            if (remainingAmount >= invoiceDueAmount) {
-                description=description+invoice.getInvoiceId()+" ,";
-                invoice.setDueAmount(0);
-                invoice.setPaymentStatus(PaymentStatus.FULL_PAYMENT);
-                remainingAmount -= invoiceDueAmount;
-                invoiceRepository.save(invoice);
-            } else {
-                description=description+invoice.getInvoiceId()+" ,";
-                invoice.setDueAmount(invoiceDueAmount - remainingAmount);
-                invoice.setPaymentStatus(PaymentStatus.PARTIAL_PAYMENT);
-                remainingAmount = 0;
-                invoiceRepository.save(invoice);
+            if (creditBalance <= 0) {
+                return new ApiResponseModal<>(StatusResponse.FAILED, null, "No due balance");
             }
 
-        }
+            double remainingAmount = amount;
 
-        Transactions transactions=new Transactions();
-        transactions.setDescription(description);
-        transactions.setDate(date);
-        transactions.setTime(date);
-        transactions.setAmount(amount);
-        transactions.setCustomerId(customerId);
-        transactions.setPaymentMode(paymentMode);
-        transactionRepository.save(transactions);
-        calculateBalances(customerId);
-        return new ApiResponseModal<>(StatusResponse.SUCCESS, null, "Repayment adjusted successfully");
+            String description = "Repayment against invoices: ";
+
+            List<Invoice> invoiceList =
+                    invoiceRepository.findDueInvoicesByCustomerId(customerId);
+
+            for (Invoice invoice : invoiceList) {
+
+                if (remainingAmount <= 0) {
+                    break;
+                }
+
+                double invoiceDueAmount = invoice.getDueAmount();
+
+                if (remainingAmount >= invoiceDueAmount) {
+                    description = description + invoice.getInvoiceId() + " ,";
+                    invoice.setDueAmount(0);
+                    invoice.setPaymentStatus(PaymentStatus.FULL_PAYMENT);
+                    remainingAmount -= invoiceDueAmount;
+                    invoiceRepository.save(invoice);
+                } else {
+                    description = description + invoice.getInvoiceId() + " ,";
+                    invoice.setDueAmount(invoiceDueAmount - remainingAmount);
+                    invoice.setPaymentStatus(PaymentStatus.PARTIAL_PAYMENT);
+                    remainingAmount = 0;
+                    invoiceRepository.save(invoice);
+                }
+
+            }
+
+            Transactions transactions = new Transactions();
+            transactions.setDescription(description);
+            transactions.setDate(date);
+            transactions.setTime(date);
+            transactions.setAmount(amount);
+            transactions.setCustomerId(customerId);
+            transactions.setPaymentMode(paymentMode);
+            transactionRepository.save(transactions);
+            calculateBalances(customerId);
+            return new ApiResponseModal<>(StatusResponse.SUCCESS, null, "Repayment adjusted successfully");
+        }catch (Exception e)
+        {
+            e.printStackTrace();
+            return new ApiResponseModal<>(StatusResponse.FAILED, null, e.getMessage());
+
+        }
     }
 
 
@@ -245,6 +284,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             creditHistory.setDate(new Date());
             creditHistory.setTime(new Date());
             creditHistory.setAmount(invoice.getAmount());
+            creditAmount+=creditHistory.getAmount();
             creditHistoryRepository.save(creditHistory);
         }else {
 
@@ -335,7 +375,10 @@ public class InvoiceServiceImpl implements InvoiceService {
             }
 
         }
-    }
+
+        }
+        invoice.setDueAmount(creditAmount);
+        invoiceRepository.save(invoice);
 
     }
 
@@ -382,13 +425,18 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     private InvoiceDto buildInvoiceDto(Invoice invoice) {
 
+        SimpleDateFormat dateFormatter = new SimpleDateFormat("dd-MM-yyyy");
+        SimpleDateFormat timeFormatter = new SimpleDateFormat("HH:mm");
+
         InvoiceDto invoiceDto = new InvoiceDto();
 
         // Invoice details
         invoiceDto.setInvoiceId(invoice.getInvoiceId());
         invoiceDto.setDescription(invoice.getDescription());
-        invoiceDto.setDate(invoice.getDate());
-        invoiceDto.setTime(invoice.getTime());
+
+        invoiceDto.setDate(dateFormatter.format(invoice.getDate()));
+        invoiceDto.setTime(timeFormatter.format(invoice.getTime()));
+
         invoiceDto.setPaymentStatus(invoice.getPaymentStatus());
         invoiceDto.setAmount(invoice.getAmount());
         invoiceDto.setDiscount(invoice.getDiscount());
