@@ -10,6 +10,8 @@ import java.util.Date;
 @Data
 public class Expense {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int expenseId;
     private String description;
     private int amount;
