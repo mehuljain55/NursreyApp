@@ -32,10 +32,10 @@ public class BackupService {
     @Autowired
     private MailingService mailingService;
 
-    private static final String EMAIL_ID = "ayushflorist59@gmail.com";
-    private static final String DB_NAME = "ayush";
+    private static final String EMAIL_ID = "cafeconnet02@gmail.com\n";
+    private static final String DB_NAME = "test";
     private static final String DB_HOST = "69.62.85.76";
-    private static final String BACKUP_DIRECTORY = "resources" + File.separator + "Backup";
+    private static final String BACKUP_DIRECTORY = "resources" + File.separator +"Test"+File.separator +"Backup";
 
     @Scheduled(cron = "0 0 2 * * ?") // Daily at 5 AM
     public void scheduledBackup() {
